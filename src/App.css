@@ -1,402 +1,244 @@
-import React, { useState, useEffect } from 'react';
-import './App.css';
-import { AlertButton } from './components/AlertButton';
-
-function App() {
-  const [personnel, setPersonnel] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('agents');
-  
-  // Tab 1: Recherche Agents
-  const [searchAgent, setSearchAgent] = useState('');
-  const [selectedAgent, setSelectedAgent] = useState(null);
-  const [editingAgent, setEditingAgent] = useState(null);
-  const [editData, setEditData] = useState({});
-
-  // Tab 2: Recherche Inversée
-  const [searchNumber, setSearchNumber] = useState('');
-  const [inverseResults, setInverseResults] = useState([]);
-
-  useEffect(() => {
-    loadPersonnel();
-  }, []);
-
-  async function loadPersonnel() {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/sheets');
-      if (!response.ok) throw new Error('Erreur API');
-      const data = await response.json();
-      setPersonnel(data.personnel || []);
-    } catch (error) {
-      console.error('Erreur chargement:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // ===== TAB 2: RECHERCHE INVERSÉE =====
-  useEffect(() => {
-    if (!searchNumber.trim()) {
-      setInverseResults([]);
-      return;
-    }
-
-    const query = searchNumber.toLowerCase().trim();
-    const results = [];
-
-    personnel.forEach(p => {
-      const epiFields = [
-        { field: 'baudrier_num', label: 'BAUDRIER', type: p.baudrier_type, date: p.baudrier_date },
-        { field: 'casque_num', label: 'CASQUE', type: p.casque_type, date: p.casque_date },
-        { field: 'longe_num', label: 'LONGE', type: p.longe_type, date: p.longe_date },
-        { field: 'mousq_num1', label: 'MOUSQUETON', type: p.mousq_type, date: p.mousq_date },
-        { field: 'mousq_num2', label: 'MOUSQUETON', type: p.mousq_type, date: p.mousq_date },
-        { field: 'desc_num', label: 'DESCENDEUR', type: p.desc_type, date: p.desc_date },
-        { field: 'poig_num', label: 'POIGNÉE', type: p.poig_type, date: p.poig_date },
-      ];
-
-      epiFields.forEach(epi => {
-        const value = p[epi.field];
-        if (value && value.toLowerCase().includes(query)) {
-          results.push({
-            agent: `${p.nom} ${p.prenom}`,
-            epi: epi.label,
-            type: epi.type || 'N/A',
-            number: value,
-            date: epi.date,
-            isExpired: epi.date && parseInt(epi.date) < 2026,
-            isWarning: epi.date && parseInt(epi.date) === 2026,
-          });
-        }
-      });
-    });
-
-    setInverseResults(results);
-  }, [searchNumber, personnel]);
-
-  // ===== TAB 1: RECHERCHE AGENTS =====
-  const filteredAgents = personnel.filter(p =>
-    `${p.nom} ${p.prenom}`.toLowerCase().includes(searchAgent.toLowerCase())
-  );
-
-  function openAgent(agent) {
-    setSelectedAgent(agent);
-    setEditingAgent(null);
-  }
-
-  function startEdit(agent) {
-    setEditingAgent(agent);
-    setEditData({ ...agent });
-  }
-
-  async function saveFiche() {
-    try {
-      const agentIndex = personnel.findIndex(p => p.nom === editData.nom && p.prenom === editData.prenom);
-      if (agentIndex === -1) throw new Error('Agent not found');
-
-      const response = await fetch('/api/sheets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'updatePersonnel',
-          rowIndex: agentIndex,
-          data: editData,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Erreur sauvegarde');
-
-      const newPersonnel = [...personnel];
-      newPersonnel[agentIndex] = editData;
-      setPersonnel(newPersonnel);
-      
-      setSelectedAgent(editData);
-      setEditingAgent(null);
-      alert('✅ Fiche mise à jour avec succès!');
-    } catch (error) {
-      console.error('Erreur sauvegarde:', error);
-      alert('❌ Erreur lors de la sauvegarde');
-    }
-  }
-
-  return (
-    <div className="app">
-      {/* HEADER */}
-      <header className="header">
-        <div className="header-left">
-          <h1>📋 EPI SMPM</h1>
-          <p>Gestion des Équipements de Protection Individuelle</p>
-        </div>
-        <div className="header-right">
-          <AlertButton />
-        </div>
-      </header>
-
-      {/* TABS */}
-      <div className="tabs-wrapper">
-        <div className="tabs">
-          <button
-            className={`tab ${activeTab === 'agents' ? 'active' : ''}`}
-            onClick={() => setActiveTab('agents')}
-          >
-            👤 Recherche Agents
-          </button>
-          <button
-            className={`tab ${activeTab === 'numbers' ? 'active' : ''}`}
-            onClick={() => setActiveTab('numbers')}
-          >
-            🔢 Recherche Numéros
-          </button>
-        </div>
-      </div>
-
-      {/* MAIN CONTENT */}
-      <main className="main-content">
-        
-        {/* ===== TAB 1: RECHERCHE AGENTS ===== */}
-        {activeTab === 'agents' && (
-          <>
-            <div className="search-box">
-              <input
-                type="text"
-                placeholder="🔍 Rechercher par nom d'agent..."
-                value={searchAgent}
-                onChange={e => setSearchAgent(e.target.value)}
-                className="search-input"
-              />
-              <button className="btn-refresh" onClick={loadPersonnel}>
-                🔄 Actualiser
-              </button>
-            </div>
-
-            {loading ? (
-              <div className="loading">Chargement...</div>
-            ) : filteredAgents.length === 0 ? (
-              <div className="no-results">Aucun agent trouvé</div>
-            ) : (
-              <div className="agents-grid">
-                {filteredAgents.map((p, i) => (
-                  <button
-                    key={i}
-                    className="agent-button"
-                    onClick={() => openAgent(p)}
-                  >
-                    <span className="agent-name">{p.prenom} {p.nom}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-
-        {/* ===== TAB 2: RECHERCHE INVERSÉE ===== */}
-        {activeTab === 'numbers' && (
-          <>
-            <div className="search-box">
-              <input
-                type="text"
-                placeholder="🔢 Chercher par numéro de série (ex: 123, PRO-456)..."
-                value={searchNumber}
-                onChange={e => setSearchNumber(e.target.value)}
-                className="search-input"
-              />
-              <button className="btn-refresh" onClick={loadPersonnel}>
-                🔄 Actualiser
-              </button>
-            </div>
-
-            {loading ? (
-              <div className="loading">Chargement...</div>
-            ) : inverseResults.length === 0 ? (
-              <div className="no-results">
-                {searchNumber.trim() === '' 
-                  ? 'Tapez un numéro pour chercher...'
-                  : 'Aucun numéro correspondant trouvé'}
-              </div>
-            ) : (
-              <div className="inverse-results">
-                <div className="results-header">
-                  Résultats: <strong>{inverseResults.length}</strong> équipement(s) trouvé(s)
-                </div>
-                {inverseResults.map((result, i) => (
-                  <div key={i} className="inverse-card">
-                    <div className="inverse-card-header">
-                      <span className="inverse-agent">👤 {result.agent}</span>
-                      <span className={`inverse-status ${result.isExpired ? 'expired' : result.isWarning ? 'warning' : 'ok'}`}>
-                        {result.isExpired ? '⚠️ EXPIRÉ' : result.isWarning ? '⚠️ 2026' : '✅ OK'}
-                      </span>
-                    </div>
-                    <div className="inverse-card-body">
-                      <div className="inverse-row">
-                        <span className="inverse-label">EPI:</span>
-                        <span className="inverse-value">{result.epi}</span>
-                      </div>
-                      <div className="inverse-row">
-                        <span className="inverse-label">Type:</span>
-                        <span className="inverse-value">{result.type}</span>
-                      </div>
-                      <div className="inverse-row">
-                        <span className="inverse-label">Numéro:</span>
-                        <span className="inverse-value inverse-number">{result.number}</span>
-                      </div>
-                      <div className="inverse-row">
-                        <span className="inverse-label">Expiration:</span>
-                        <span className="inverse-value">{result.date}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </main>
-
-      {/* MODAL: Fiche Détaillée */}
-      {selectedAgent && (
-        <div className="modal-bg open" onClick={() => setSelectedAgent(null)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            {editingAgent ? (
-              // MODE ÉDITION
-              <>
-                <div className="modal-header">
-                  <h3>✏️ Éditer - {editData.prenom} {editData.nom}</h3>
-                  <button className="close-btn" onClick={() => setEditingAgent(null)}>✕</button>
-                </div>
-
-                <div className="modal-body">
-                  <div className="edit-form">
-                    <div className="form-group">
-                      <label>NOM</label>
-                      <input type="text" value={editData.nom || ''} onChange={e => setEditData({...editData, nom: e.target.value})} />
-                    </div>
-                    <div className="form-group">
-                      <label>PRÉNOM</label>
-                      <input type="text" value={editData.prenom || ''} onChange={e => setEditData({...editData, prenom: e.target.value})} />
-                    </div>
-
-                    <div className="form-group">
-                      <label>🛡️ BAUDRIER</label>
-                      <input type="text" placeholder="Type" value={editData.baudrier_type || ''} onChange={e => setEditData({...editData, baudrier_type: e.target.value})} />
-                      <input type="text" placeholder="Numéro" value={editData.baudrier_num || ''} onChange={e => setEditData({...editData, baudrier_num: e.target.value})} />
-                      <input type="text" placeholder="Date (ex: 2026)" value={editData.baudrier_date || ''} onChange={e => setEditData({...editData, baudrier_date: e.target.value})} />
-                    </div>
-
-                    <div className="form-group">
-                      <label>🎩 CASQUE</label>
-                      <input type="text" placeholder="Type" value={editData.casque_type || ''} onChange={e => setEditData({...editData, casque_type: e.target.value})} />
-                      <input type="text" placeholder="Numéro" value={editData.casque_num || ''} onChange={e => setEditData({...editData, casque_num: e.target.value})} />
-                      <input type="text" placeholder="Date (ex: 2026)" value={editData.casque_date || ''} onChange={e => setEditData({...editData, casque_date: e.target.value})} />
-                    </div>
-
-                    <div className="form-group">
-                      <label>🪢 LONGE</label>
-                      <input type="text" placeholder="Type" value={editData.longe_type || ''} onChange={e => setEditData({...editData, longe_type: e.target.value})} />
-                      <input type="text" placeholder="Numéro" value={editData.longe_num || ''} onChange={e => setEditData({...editData, longe_num: e.target.value})} />
-                      <input type="text" placeholder="Date (ex: 2026)" value={editData.longe_date || ''} onChange={e => setEditData({...editData, longe_date: e.target.value})} />
-                    </div>
-
-                    <div className="form-group">
-                      <label>🔌 MOUSQUETON</label>
-                      <input type="text" placeholder="Type" value={editData.mousq_type || ''} onChange={e => setEditData({...editData, mousq_type: e.target.value})} />
-                      <input type="text" placeholder="Numéro 1" value={editData.mousq_num1 || ''} onChange={e => setEditData({...editData, mousq_num1: e.target.value})} />
-                      <input type="text" placeholder="Numéro 2" value={editData.mousq_num2 || ''} onChange={e => setEditData({...editData, mousq_num2: e.target.value})} />
-                    </div>
-
-                    <div className="form-group">
-                      <label>⬇️ DESCENDEUR</label>
-                      <input type="text" placeholder="Type" value={editData.desc_type || ''} onChange={e => setEditData({...editData, desc_type: e.target.value})} />
-                      <input type="text" placeholder="Numéro" value={editData.desc_num || ''} onChange={e => setEditData({...editData, desc_num: e.target.value})} />
-                      <input type="text" placeholder="Date (ex: 2026)" value={editData.desc_date || ''} onChange={e => setEditData({...editData, desc_date: e.target.value})} />
-                    </div>
-
-                    <div className="form-group">
-                      <label>✋ POIGNÉE</label>
-                      <input type="text" placeholder="Type" value={editData.poig_type || ''} onChange={e => setEditData({...editData, poig_type: e.target.value})} />
-                      <input type="text" placeholder="Numéro" value={editData.poig_num || ''} onChange={e => setEditData({...editData, poig_num: e.target.value})} />
-                      <input type="text" placeholder="Date (ex: 2026)" value={editData.poig_date || ''} onChange={e => setEditData({...editData, poig_date: e.target.value})} />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="modal-footer">
-                  <button className="btn-save" onClick={saveFiche}>💾 Sauvegarder</button>
-                  <button className="btn-cancel" onClick={() => setEditingAgent(null)}>Annuler</button>
-                </div>
-              </>
-            ) : (
-              // MODE LECTURE
-              <>
-                <div className="modal-header">
-                  <h3>{selectedAgent.prenom} {selectedAgent.nom}</h3>
-                  <button className="close-btn" onClick={() => setSelectedAgent(null)}>✕</button>
-                </div>
-
-                <div className="modal-body">
-                  <div className="epi-grid">
-                    {selectedAgent.baudrier_type && (
-                      <div className="epi-item">
-                        <span className="epi-label">🛡️ BAUDRIER</span>
-                        <span className="epi-value">{selectedAgent.baudrier_type}</span>
-                        {selectedAgent.baudrier_num && <span className="epi-num">#{selectedAgent.baudrier_num}</span>}
-                        <span className="epi-date">{selectedAgent.baudrier_date} {parseInt(selectedAgent.baudrier_date) < 2026 ? '⚠️' : '✅'}</span>
-                      </div>
-                    )}
-                    {selectedAgent.casque_type && (
-                      <div className="epi-item">
-                        <span className="epi-label">🎩 CASQUE</span>
-                        <span className="epi-value">{selectedAgent.casque_type}</span>
-                        {selectedAgent.casque_num && <span className="epi-num">#{selectedAgent.casque_num}</span>}
-                        <span className="epi-date">{selectedAgent.casque_date} {parseInt(selectedAgent.casque_date) < 2026 ? '⚠️' : '✅'}</span>
-                      </div>
-                    )}
-                    {selectedAgent.longe_type && (
-                      <div className="epi-item">
-                        <span className="epi-label">🪢 LONGE</span>
-                        <span className="epi-value">{selectedAgent.longe_type}</span>
-                        {selectedAgent.longe_num && <span className="epi-num">#{selectedAgent.longe_num}</span>}
-                        <span className="epi-date">{selectedAgent.longe_date} {parseInt(selectedAgent.longe_date) < 2026 ? '⚠️' : '✅'}</span>
-                      </div>
-                    )}
-                    {selectedAgent.mousq_type && (
-                      <div className="epi-item">
-                        <span className="epi-label">🔌 MOUSQUETON</span>
-                        <span className="epi-value">{selectedAgent.mousq_type}</span>
-                        {selectedAgent.mousq_num1 && <span className="epi-num">#{selectedAgent.mousq_num1}</span>}
-                        <span className="epi-date">✅ Présent</span>
-                      </div>
-                    )}
-                    {selectedAgent.desc_type && (
-                      <div className="epi-item">
-                        <span className="epi-label">⬇️ DESCENDEUR</span>
-                        <span className="epi-value">{selectedAgent.desc_type}</span>
-                        {selectedAgent.desc_num && <span className="epi-num">#{selectedAgent.desc_num}</span>}
-                        <span className="epi-date">{selectedAgent.desc_date} {parseInt(selectedAgent.desc_date) < 2026 ? '⚠️' : '✅'}</span>
-                      </div>
-                    )}
-                    {selectedAgent.poig_type && (
-                      <div className="epi-item">
-                        <span className="epi-label">✋ POIGNÉE</span>
-                        <span className="epi-value">{selectedAgent.poig_type}</span>
-                        {selectedAgent.poig_num && <span className="epi-num">#{selectedAgent.poig_num}</span>}
-                        <span className="epi-date">{selectedAgent.poig_date} {parseInt(selectedAgent.poig_date) < 2026 ? '⚠️' : '✅'}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="modal-footer">
-                  <button className="btn-edit" onClick={() => startEdit(selectedAgent)}>✏️ Éditer</button>
-                  <button className="btn-close" onClick={() => setSelectedAgent(null)}>Fermer</button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+/* ==================== RESET & BASE ==================== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-export default App;
+body {
+  font-family: Arial, sans-serif;
+  background: #EBF3FB;
+  color: #1F3864;
+  min-height: 100vh;
+  padding: 16px;
+}
+
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ==================== HEADER ==================== */
+.header {
+  background: linear-gradient(135deg, #1F3864 0%, #2E5090 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  box-shadow: 0 4px 12px rgba(31, 56, 100, 0.15);
+}
+
+.header-left h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.header-left p {
+  font-size: 13px;
+  opacity: 0.8;
+  letter-spacing: 0.3px;
+}
+
+.header-right {
+  margin-left: auto;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* ==================== TABS ==================== */
+.tabs-wrapper {
+  margin-bottom: 20px;
+  background: white;
+  border-radius: 12px;
+  padding: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.tab {
+  flex: 1;
+  min-width: 150px;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  color: #5A7A9A;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  background: #F0F6FC;
+  color: #2E75B6;
+}
+
+.tab.active {
+  background: linear-gradient(135deg, #2E75B6 0%, #1a5a9a 100%);
+  color: white;
+  box-shadow: 0 2px 6px rgba(46, 117, 182, 0.2);
+}
+
+/* ==================== SEARCH BOX ==================== */
+.search-box {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 12px 16px;
+  border: 1.5px solid #C5D8ED;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #1F3864;
+  background: white;
+  outline: none;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.search-input:focus {
+  border-color: #2E75B6;
+  box-shadow: 0 2px 8px rgba(46, 117, 182, 0.15);
+}
+
+/* ==================== BUTTONS ==================== */
+.btn-refresh {
+  padding: 12px 20px;
+  background: #2E75B6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 6px rgba(46, 117, 182, 0.2);
+  white-space: nowrap;
+}
+
+.btn-refresh:hover {
+  background: #1a5a9a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(46, 117, 182, 0.3);
+}
+
+/* ==================== ALARM BUTTON ==================== */
+.alarm-button {
+  position: relative;
+  background: #ED7D31;
+  color: white;
+  border: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(237, 125, 49, 0.3);
+}
+
+.alarm-button:hover {
+  background: #c4601a;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(237, 125, 49, 0.4);
+}
+
+.alarm-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #C00000;
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(192, 0, 0, 0.3);
+}
+
+/* ==================== LOADING ==================== */
+.loading,
+.no-results {
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 14px;
+  color: #5A7A9A;
+}
+
+/* ==================== AGENTS GRID (RECTANGLES) ==================== */
+.agents-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 20px;
+}
+
+@media (max-width: 1024px) {
+  .agents-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .agents-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+.agent-button {
+  background: white;
+  border: 2px solid #C5D8ED;
+  border-radius: 12px;
+  padding: 24px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.agent-button:hover {
+  border-color: #2E75B6;
+  background: linear-gradient(135deg, #F0F6FC 0%, #E8ECFC 100%);
+  box-shadow: 0 6px 20px rgba(46, 117, 182, 0.2);
+  transform: translateY(-4px);
+}
+
+.agent-button:active {
+  transform: translateY(-2px);
+}
+
+.agent-name {
+  display: block;
