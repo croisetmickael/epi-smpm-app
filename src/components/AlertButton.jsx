@@ -190,7 +190,7 @@ export function AlertButton() {
 
 function AlertesModal({ alerts, redCount, orangeCount, totalCount, onClose, onRefresh }) {
   return (
-    <div className="modal-bg" onClick={onClose}>
+    <div className="modal-bg open" onClick={onClose}>
       <div className="modal alertes-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h3>🚨 ALERTES D'EXPIRATION ({totalCount})</h3>
@@ -213,9 +213,19 @@ function AlertesModal({ alerts, redCount, orangeCount, totalCount, onClose, onRe
                     .filter(a => a.level === 'red')
                     .map((alert, i) => (
                       <div key={i} className="alerte-item red">
-                        <div className="alerte-agent">{alert.agent}</div>
-                        <div className="alerte-details">
-                          {alert.mat} {alert.type && `(${alert.type})`} → {alert.an}
+                        <div className="alerte-content">
+                          <div className="alerte-mat">
+                            {alert.mat} {alert.type && `— ${alert.type}`}
+                          </div>
+                          <div className="alerte-agent">👤 {alert.agent}</div>
+                        </div>
+                        <div style={{ 
+                          fontSize: '13px', 
+                          fontWeight: '700', 
+                          color: '#C00000',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {alert.an}
                         </div>
                       </div>
                     ))}
@@ -231,9 +241,19 @@ function AlertesModal({ alerts, redCount, orangeCount, totalCount, onClose, onRe
                     .filter(a => a.level === 'orange')
                     .map((alert, i) => (
                       <div key={i} className="alerte-item orange">
-                        <div className="alerte-agent">{alert.agent}</div>
-                        <div className="alerte-details">
-                          {alert.mat} {alert.type && `(${alert.type})`} → {alert.an}
+                        <div className="alerte-content">
+                          <div className="alerte-mat">
+                            {alert.mat} {alert.type && `— ${alert.type}`}
+                          </div>
+                          <div className="alerte-agent">👤 {alert.agent}</div>
+                        </div>
+                        <div style={{ 
+                          fontSize: '13px', 
+                          fontWeight: '700', 
+                          color: '#ED7D31',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {alert.an}
                         </div>
                       </div>
                     ))}
