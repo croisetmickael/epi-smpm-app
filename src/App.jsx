@@ -34,42 +34,6 @@ function App() {
     }
   }
 
-  // ===== TAB 1: RECHERCHE AGENTS =====
-  const filteredAgents = personnel.filter(p =>
-    `${p.nom} ${p.prenom}`.toLowerCase().includes(searchAgent.toLowerCase())
-  );
-
-  function startEdit(index, agent) {
-    setEditingIndex(index);
-    setEditData({ ...agent });
-  }
-
-  async function saveFiche() {
-    try {
-      const response = await fetch('/api/sheets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'updatePersonnel',
-          rowIndex: editingIndex,
-          data: editData,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Erreur sauvegarde');
-
-      const newPersonnel = [...personnel];
-      newPersonnel[editingIndex] = editData;
-      setPersonnel(newPersonnel);
-      
-      setEditingIndex(null);
-      alert('✅ Fiche mise à jour avec succès!');
-    } catch (error) {
-      console.error('Erreur sauvegarde:', error);
-      alert('❌ Erreur lors de la sauvegarde');
-    }
-  }
-
   // ===== TAB 2: RECHERCHE INVERSÉE =====
   useEffect(() => {
     if (!searchNumber.trim()) {
@@ -109,6 +73,42 @@ function App() {
 
     setInverseResults(results);
   }, [searchNumber, personnel]);
+
+  // ===== TAB 1: RECHERCHE AGENTS =====
+  const filteredAgents = personnel.filter(p =>
+    `${p.nom} ${p.prenom}`.toLowerCase().includes(searchAgent.toLowerCase())
+  );
+
+  function startEdit(index, agent) {
+    setEditingIndex(index);
+    setEditData({ ...agent });
+  }
+
+  async function saveFiche() {
+    try {
+      const response = await fetch('/api/sheets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'updatePersonnel',
+          rowIndex: editingIndex,
+          data: editData,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Erreur sauvegarde');
+
+      const newPersonnel = [...personnel];
+      newPersonnel[editingIndex] = editData;
+      setPersonnel(newPersonnel);
+      
+      setEditingIndex(null);
+      alert('✅ Fiche mise à jour avec succès!');
+    } catch (error) {
+      console.error('Erreur sauvegarde:', error);
+      alert('❌ Erreur lors de la sauvegarde');
+    }
+  }
 
   return (
     <div className="app">
