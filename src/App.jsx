@@ -9,7 +9,8 @@ function App() {
   
   // Tab 1: Recherche Agents
   const [searchAgent, setSearchAgent] = useState('');
-  const [editingIndex, setEditingIndex] = useState(null);
+  const [selectedAgent, setSelectedAgent] = useState(null);
+  const [editingAgent, setEditingAgent] = useState(null);
   const [editData, setEditData] = useState({});
 
   // Tab 2: Recherche Inversée
@@ -79,19 +80,27 @@ function App() {
     `${p.nom} ${p.prenom}`.toLowerCase().includes(searchAgent.toLowerCase())
   );
 
-  function startEdit(index, agent) {
-    setEditingIndex(index);
+  function openAgent(agent) {
+    setSelectedAgent(agent);
+    setEditingAgent(null);
+  }
+
+  function startEdit(agent) {
+    setEditingAgent(agent);
     setEditData({ ...agent });
   }
 
   async function saveFiche() {
     try {
+      const agentIndex = personnel.findIndex(p => p.nom === editData.nom && p.prenom === editData.prenom);
+      if (agentIndex === -1) throw new Error('Agent not found');
+
       const response = await fetch('/api/sheets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'updatePersonnel',
-          rowIndex: editingIndex,
+          rowIndex: agentIndex,
           data: editData,
         }),
       });
@@ -99,10 +108,11 @@ function App() {
       if (!response.ok) throw new Error('Erreur sauvegarde');
 
       const newPersonnel = [...personnel];
-      newPersonnel[editingIndex] = editData;
+      newPersonnel[agentIndex] = editData;
       setPersonnel(newPersonnel);
       
-      setEditingIndex(null);
+      setSelectedAgent(editData);
+      setEditingAgent(null);
       alert('✅ Fiche mise à jour avec succès!');
     } catch (error) {
       console.error('Erreur sauvegarde:', error);
@@ -165,20 +175,15 @@ function App() {
             ) : filteredAgents.length === 0 ? (
               <div className="no-results">Aucun agent trouvé</div>
             ) : (
-              <div className="personnel-grid">
+              <div className="agents-grid">
                 {filteredAgents.map((p, i) => (
-                  <PersonnelCard
+                  <button
                     key={i}
-                    personnel={p}
-                    isEditing={editingIndex === i}
-                    editData={editData}
-                    onEdit={() => startEdit(i, p)}
-                    onCancel={() => setEditingIndex(null)}
-                    onSave={saveFiche}
-                    onFieldChange={(field, value) => 
-                      setEditData({ ...editData, [field]: value })
-                    }
-                  />
+                    className="agent-button"
+                    onClick={() => openAgent(p)}
+                  >
+                    <span className="agent-name">{p.prenom} {p.nom}</span>
+                  </button>
                 ))}
               </div>
             )}
@@ -247,131 +252,149 @@ function App() {
           </>
         )}
       </main>
-    </div>
-  );
-}
 
-function PersonnelCard({
-  personnel: p,
-  isEditing,
-  editData,
-  onEdit,
-  onCancel,
-  onSave,
-  onFieldChange,
-}) {
-  if (isEditing) {
-    return (
-      <div className="personnel-card editing">
-        <h3>{editData.prenom} {editData.nom}</h3>
-        <div className="edit-form">
-          <div className="form-group">
-            <label>NOM</label>
-            <input type="text" value={editData.nom || ''} onChange={e => onFieldChange('nom', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label>PRÉNOM</label>
-            <input type="text" value={editData.prenom || ''} onChange={e => onFieldChange('prenom', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label>🛡️ BAUDRIER</label>
-            <input type="text" placeholder="Type" value={editData.baudrier_type || ''} onChange={e => onFieldChange('baudrier_type', e.target.value)} />
-            <input type="text" placeholder="Numéro" value={editData.baudrier_num || ''} onChange={e => onFieldChange('baudrier_num', e.target.value)} />
-            <input type="text" placeholder="Date (ex: 2026)" value={editData.baudrier_date || ''} onChange={e => onFieldChange('baudrier_date', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label>🎩 CASQUE</label>
-            <input type="text" placeholder="Type" value={editData.casque_type || ''} onChange={e => onFieldChange('casque_type', e.target.value)} />
-            <input type="text" placeholder="Numéro" value={editData.casque_num || ''} onChange={e => onFieldChange('casque_num', e.target.value)} />
-            <input type="text" placeholder="Date (ex: 2026)" value={editData.casque_date || ''} onChange={e => onFieldChange('casque_date', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label>🪢 LONGE</label>
-            <input type="text" placeholder="Type" value={editData.longe_type || ''} onChange={e => onFieldChange('longe_type', e.target.value)} />
-            <input type="text" placeholder="Numéro" value={editData.longe_num || ''} onChange={e => onFieldChange('longe_num', e.target.value)} />
-            <input type="text" placeholder="Date (ex: 2026)" value={editData.longe_date || ''} onChange={e => onFieldChange('longe_date', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label>🔌 MOUSQUETON</label>
-            <input type="text" placeholder="Type" value={editData.mousq_type || ''} onChange={e => onFieldChange('mousq_type', e.target.value)} />
-            <input type="text" placeholder="Numéro 1" value={editData.mousq_num1 || ''} onChange={e => onFieldChange('mousq_num1', e.target.value)} />
-            <input type="text" placeholder="Numéro 2" value={editData.mousq_num2 || ''} onChange={e => onFieldChange('mousq_num2', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label>⬇️ DESCENDEUR</label>
-            <input type="text" placeholder="Type" value={editData.desc_type || ''} onChange={e => onFieldChange('desc_type', e.target.value)} />
-            <input type="text" placeholder="Numéro" value={editData.desc_num || ''} onChange={e => onFieldChange('desc_num', e.target.value)} />
-            <input type="text" placeholder="Date (ex: 2026)" value={editData.desc_date || ''} onChange={e => onFieldChange('desc_date', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label>✋ POIGNÉE</label>
-            <input type="text" placeholder="Type" value={editData.poig_type || ''} onChange={e => onFieldChange('poig_type', e.target.value)} />
-            <input type="text" placeholder="Numéro" value={editData.poig_num || ''} onChange={e => onFieldChange('poig_num', e.target.value)} />
-            <input type="text" placeholder="Date (ex: 2026)" value={editData.poig_date || ''} onChange={e => onFieldChange('poig_date', e.target.value)} />
+      {/* MODAL: Fiche Détaillée */}
+      {selectedAgent && (
+        <div className="modal-bg open" onClick={() => setSelectedAgent(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            {editingAgent ? (
+              // MODE ÉDITION
+              <>
+                <div className="modal-header">
+                  <h3>✏️ Éditer - {editData.prenom} {editData.nom}</h3>
+                  <button className="close-btn" onClick={() => setEditingAgent(null)}>✕</button>
+                </div>
+
+                <div className="modal-body">
+                  <div className="edit-form">
+                    <div className="form-group">
+                      <label>NOM</label>
+                      <input type="text" value={editData.nom || ''} onChange={e => setEditData({...editData, nom: e.target.value})} />
+                    </div>
+                    <div className="form-group">
+                      <label>PRÉNOM</label>
+                      <input type="text" value={editData.prenom || ''} onChange={e => setEditData({...editData, prenom: e.target.value})} />
+                    </div>
+
+                    <div className="form-group">
+                      <label>🛡️ BAUDRIER</label>
+                      <input type="text" placeholder="Type" value={editData.baudrier_type || ''} onChange={e => setEditData({...editData, baudrier_type: e.target.value})} />
+                      <input type="text" placeholder="Numéro" value={editData.baudrier_num || ''} onChange={e => setEditData({...editData, baudrier_num: e.target.value})} />
+                      <input type="text" placeholder="Date (ex: 2026)" value={editData.baudrier_date || ''} onChange={e => setEditData({...editData, baudrier_date: e.target.value})} />
+                    </div>
+
+                    <div className="form-group">
+                      <label>🎩 CASQUE</label>
+                      <input type="text" placeholder="Type" value={editData.casque_type || ''} onChange={e => setEditData({...editData, casque_type: e.target.value})} />
+                      <input type="text" placeholder="Numéro" value={editData.casque_num || ''} onChange={e => setEditData({...editData, casque_num: e.target.value})} />
+                      <input type="text" placeholder="Date (ex: 2026)" value={editData.casque_date || ''} onChange={e => setEditData({...editData, casque_date: e.target.value})} />
+                    </div>
+
+                    <div className="form-group">
+                      <label>🪢 LONGE</label>
+                      <input type="text" placeholder="Type" value={editData.longe_type || ''} onChange={e => setEditData({...editData, longe_type: e.target.value})} />
+                      <input type="text" placeholder="Numéro" value={editData.longe_num || ''} onChange={e => setEditData({...editData, longe_num: e.target.value})} />
+                      <input type="text" placeholder="Date (ex: 2026)" value={editData.longe_date || ''} onChange={e => setEditData({...editData, longe_date: e.target.value})} />
+                    </div>
+
+                    <div className="form-group">
+                      <label>🔌 MOUSQUETON</label>
+                      <input type="text" placeholder="Type" value={editData.mousq_type || ''} onChange={e => setEditData({...editData, mousq_type: e.target.value})} />
+                      <input type="text" placeholder="Numéro 1" value={editData.mousq_num1 || ''} onChange={e => setEditData({...editData, mousq_num1: e.target.value})} />
+                      <input type="text" placeholder="Numéro 2" value={editData.mousq_num2 || ''} onChange={e => setEditData({...editData, mousq_num2: e.target.value})} />
+                    </div>
+
+                    <div className="form-group">
+                      <label>⬇️ DESCENDEUR</label>
+                      <input type="text" placeholder="Type" value={editData.desc_type || ''} onChange={e => setEditData({...editData, desc_type: e.target.value})} />
+                      <input type="text" placeholder="Numéro" value={editData.desc_num || ''} onChange={e => setEditData({...editData, desc_num: e.target.value})} />
+                      <input type="text" placeholder="Date (ex: 2026)" value={editData.desc_date || ''} onChange={e => setEditData({...editData, desc_date: e.target.value})} />
+                    </div>
+
+                    <div className="form-group">
+                      <label>✋ POIGNÉE</label>
+                      <input type="text" placeholder="Type" value={editData.poig_type || ''} onChange={e => setEditData({...editData, poig_type: e.target.value})} />
+                      <input type="text" placeholder="Numéro" value={editData.poig_num || ''} onChange={e => setEditData({...editData, poig_num: e.target.value})} />
+                      <input type="text" placeholder="Date (ex: 2026)" value={editData.poig_date || ''} onChange={e => setEditData({...editData, poig_date: e.target.value})} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="modal-footer">
+                  <button className="btn-save" onClick={saveFiche}>💾 Sauvegarder</button>
+                  <button className="btn-cancel" onClick={() => setEditingAgent(null)}>Annuler</button>
+                </div>
+              </>
+            ) : (
+              // MODE LECTURE
+              <>
+                <div className="modal-header">
+                  <h3>{selectedAgent.prenom} {selectedAgent.nom}</h3>
+                  <button className="close-btn" onClick={() => setSelectedAgent(null)}>✕</button>
+                </div>
+
+                <div className="modal-body">
+                  <div className="epi-grid">
+                    {selectedAgent.baudrier_type && (
+                      <div className="epi-item">
+                        <span className="epi-label">🛡️ BAUDRIER</span>
+                        <span className="epi-value">{selectedAgent.baudrier_type}</span>
+                        {selectedAgent.baudrier_num && <span className="epi-num">#{selectedAgent.baudrier_num}</span>}
+                        <span className="epi-date">{selectedAgent.baudrier_date} {parseInt(selectedAgent.baudrier_date) < 2026 ? '⚠️' : '✅'}</span>
+                      </div>
+                    )}
+                    {selectedAgent.casque_type && (
+                      <div className="epi-item">
+                        <span className="epi-label">🎩 CASQUE</span>
+                        <span className="epi-value">{selectedAgent.casque_type}</span>
+                        {selectedAgent.casque_num && <span className="epi-num">#{selectedAgent.casque_num}</span>}
+                        <span className="epi-date">{selectedAgent.casque_date} {parseInt(selectedAgent.casque_date) < 2026 ? '⚠️' : '✅'}</span>
+                      </div>
+                    )}
+                    {selectedAgent.longe_type && (
+                      <div className="epi-item">
+                        <span className="epi-label">🪢 LONGE</span>
+                        <span className="epi-value">{selectedAgent.longe_type}</span>
+                        {selectedAgent.longe_num && <span className="epi-num">#{selectedAgent.longe_num}</span>}
+                        <span className="epi-date">{selectedAgent.longe_date} {parseInt(selectedAgent.longe_date) < 2026 ? '⚠️' : '✅'}</span>
+                      </div>
+                    )}
+                    {selectedAgent.mousq_type && (
+                      <div className="epi-item">
+                        <span className="epi-label">🔌 MOUSQUETON</span>
+                        <span className="epi-value">{selectedAgent.mousq_type}</span>
+                        {selectedAgent.mousq_num1 && <span className="epi-num">#{selectedAgent.mousq_num1}</span>}
+                        <span className="epi-date">✅ Présent</span>
+                      </div>
+                    )}
+                    {selectedAgent.desc_type && (
+                      <div className="epi-item">
+                        <span className="epi-label">⬇️ DESCENDEUR</span>
+                        <span className="epi-value">{selectedAgent.desc_type}</span>
+                        {selectedAgent.desc_num && <span className="epi-num">#{selectedAgent.desc_num}</span>}
+                        <span className="epi-date">{selectedAgent.desc_date} {parseInt(selectedAgent.desc_date) < 2026 ? '⚠️' : '✅'}</span>
+                      </div>
+                    )}
+                    {selectedAgent.poig_type && (
+                      <div className="epi-item">
+                        <span className="epi-label">✋ POIGNÉE</span>
+                        <span className="epi-value">{selectedAgent.poig_type}</span>
+                        {selectedAgent.poig_num && <span className="epi-num">#{selectedAgent.poig_num}</span>}
+                        <span className="epi-date">{selectedAgent.poig_date} {parseInt(selectedAgent.poig_date) < 2026 ? '⚠️' : '✅'}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="modal-footer">
+                  <button className="btn-edit" onClick={() => startEdit(selectedAgent)}>✏️ Éditer</button>
+                  <button className="btn-close" onClick={() => setSelectedAgent(null)}>Fermer</button>
+                </div>
+              </>
+            )}
           </div>
         </div>
-        <div className="edit-actions">
-          <button className="btn-save" onClick={onSave}>💾 Sauvegarder</button>
-          <button className="btn-cancel" onClick={onCancel}>✕ Annuler</button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="personnel-card">
-      <h3>{p.prenom} {p.nom}</h3>
-      <div className="epi-grid">
-        {p.baudrier_type && (
-          <div className="epi-item">
-            <span className="epi-label">🛡️ BAUDRIER</span>
-            <span className="epi-value">{p.baudrier_type}</span>
-            {p.baudrier_num && <span className="epi-num">#{p.baudrier_num}</span>}
-            <span className="epi-date">{p.baudrier_date} {parseInt(p.baudrier_date) < 2026 ? '⚠️' : '✅'}</span>
-          </div>
-        )}
-        {p.casque_type && (
-          <div className="epi-item">
-            <span className="epi-label">🎩 CASQUE</span>
-            <span className="epi-value">{p.casque_type}</span>
-            {p.casque_num && <span className="epi-num">#{p.casque_num}</span>}
-            <span className="epi-date">{p.casque_date} {parseInt(p.casque_date) < 2026 ? '⚠️' : '✅'}</span>
-          </div>
-        )}
-        {p.longe_type && (
-          <div className="epi-item">
-            <span className="epi-label">🪢 LONGE</span>
-            <span className="epi-value">{p.longe_type}</span>
-            {p.longe_num && <span className="epi-num">#{p.longe_num}</span>}
-            <span className="epi-date">{p.longe_date} {parseInt(p.longe_date) < 2026 ? '⚠️' : '✅'}</span>
-          </div>
-        )}
-        {p.mousq_type && (
-          <div className="epi-item">
-            <span className="epi-label">🔌 MOUSQUETON</span>
-            <span className="epi-value">{p.mousq_type}</span>
-            {p.mousq_num1 && <span className="epi-num">#{p.mousq_num1}</span>}
-            <span className="epi-date">✅ Présent</span>
-          </div>
-        )}
-        {p.desc_type && (
-          <div className="epi-item">
-            <span className="epi-label">⬇️ DESCENDEUR</span>
-            <span className="epi-value">{p.desc_type}</span>
-            {p.desc_num && <span className="epi-num">#{p.desc_num}</span>}
-            <span className="epi-date">{p.desc_date} {parseInt(p.desc_date) < 2026 ? '⚠️' : '✅'}</span>
-          </div>
-        )}
-        {p.poig_type && (
-          <div className="epi-item">
-            <span className="epi-label">✋ POIGNÉE</span>
-            <span className="epi-value">{p.poig_type}</span>
-            {p.poig_num && <span className="epi-num">#{p.poig_num}</span>}
-            <span className="epi-date">{p.poig_date} {parseInt(p.poig_date) < 2026 ? '⚠️' : '✅'}</span>
-          </div>
-        )}
-      </div>
-      <button className="btn-edit" onClick={onEdit}>✏️ Éditer</button>
+      )}
     </div>
   );
 }
