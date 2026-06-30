@@ -1,277 +1,120 @@
 import React, { useState, useEffect } from 'react';
+import './AlertButton.css';
 
 export function AlertButton() {
-  const [showModal, setShowModal] = useState(false);
-  const [alerts, setAlerts] = useState([]);
+  const [expiredItems, setExpiredItems] = useState([]);
+  const [showAlert, setShowAlert] = useState(false);
 
   useEffect(() => {
-    loadAlerts();
+    loadExpiredItems();
   }, []);
 
-  async function loadAlerts() {
+  async function loadExpiredItems() {
     try {
       const response = await fetch('/api/sheets');
       if (!response.ok) throw new Error('Erreur API');
+      const data = response.json();
       
-      const data = await response.json();
-      const personnel = data.personnel || [];
+      data.then(result => {
+        const personnel = result.personnel || [];
+        const expired = [];
 
-      const alertsList = [];
-      const YEAR = 2026;
+        personnel.forEach(p => {
+          const epiList = [
+            { field: 'baudrier_num', label: 'BAUDRIER', type: p.baudrier_type, date: p.baudrier_date },
+            { field: 'casque_num', label: 'CASQUE', type: p.casque_type, date: p.casque_date },
+            { field: 'longe_num', label: 'LONGE', type: p.longe_type, date: p.longe_date },
+            { field: 'mousq_num1', label: 'MOUSQUETON', type: p.mousq_type, date: p.mousq_date },
+            { field: 'desc_num', label: 'DESCENDEUR', type: p.desc_type, date: p.desc_date },
+            { field: 'poig_num', label: 'POIGNÉE', type: p.poig_type, date: p.poig_date },
+          ];
 
-      personnel.forEach(p => {
-        if (p.baudrier_date) {
-          const yr = parseInt(p.baudrier_date);
-          if (yr < YEAR) {
-            alertsList.push({
-              level: 'red',
-              agent: `${p.nom} ${p.prenom}`,
-              mat: 'BAUDRIER',
-              type: p.baudrier_type || '',
-              an: yr
-            });
-          } else if (yr === YEAR) {
-            alertsList.push({
-              level: 'orange',
-              agent: `${p.nom} ${p.prenom}`,
-              mat: 'BAUDRIER',
-              type: p.baudrier_type || '',
-              an: yr
-            });
-          }
-        }
+          epiList.forEach(epi => {
+            const year = epi.date ? parseInt(epi.date) : null;
+            if (year && year < 2026) {
+              expired.push({
+                agent: `${p.nom} ${p.prenom}`,
+                epi: epi.label,
+                type: epi.type || 'N/A',
+                number: p[epi.field] || 'N/A',
+                date: epi.date,
+                isExpired: year < 2026,
+              });
+            }
+          });
+        });
 
-        if (p.casque_date) {
-          const yr = parseInt(p.casque_date);
-          if (yr < YEAR) {
-            alertsList.push({
-              level: 'red',
-              agent: `${p.nom} ${p.prenom}`,
-              mat: 'CASQUE',
-              type: p.casque_type || '',
-              an: yr
-            });
-          } else if (yr === YEAR) {
-            alertsList.push({
-              level: 'orange',
-              agent: `${p.nom} ${p.prenom}`,
-              mat: 'CASQUE',
-              type: p.casque_type || '',
-              an: yr
-            });
-          }
-        }
-
-        if (p.longe_date) {
-          const yr = parseInt(p.longe_date);
-          if (yr < YEAR) {
-            alertsList.push({
-              level: 'red',
-              agent: `${p.nom} ${p.prenom}`,
-              mat: 'LONGE',
-              type: p.longe_type || '',
-              an: yr
-            });
-          } else if (yr === YEAR) {
-            alertsList.push({
-              level: 'orange',
-              agent: `${p.nom} ${p.prenom}`,
-              mat: 'LONGE',
-              type: p.longe_type || '',
-              an: yr
-            });
-          }
-        }
-
-        if (p.mousq_date) {
-          const yr = parseInt(p.mousq_date);
-          if (yr < YEAR) {
-            alertsList.push({
-              level: 'red',
-              agent: `${p.nom} ${p.prenom}`,
-              mat: 'MOUSQUETON',
-              type: p.mousq_type || '',
-              an: yr
-            });
-          } else if (yr === YEAR) {
-            alertsList.push({
-              level: 'orange',
-              agent: `${p.nom} ${p.prenom}`,
-              mat: 'MOUSQUETON',
-              type: p.mousq_type || '',
-              an: yr
-            });
-          }
-        }
-
-        if (p.desc_date) {
-          const yr = parseInt(p.desc_date);
-          if (yr < YEAR) {
-            alertsList.push({
-              level: 'red',
-              agent: `${p.nom} ${p.prenom}`,
-              mat: 'DESCENDEUR',
-              type: p.desc_type || '',
-              an: yr
-            });
-          } else if (yr === YEAR) {
-            alertsList.push({
-              level: 'orange',
-              agent: `${p.nom} ${p.prenom}`,
-              mat: 'DESCENDEUR',
-              type: p.desc_type || '',
-              an: yr
-            });
-          }
-        }
-
-        if (p.poig_date) {
-          const yr = parseInt(p.poig_date);
-          if (yr < YEAR) {
-            alertsList.push({
-              level: 'red',
-              agent: `${p.nom} ${p.prenom}`,
-              mat: 'POIGNÉE',
-              type: p.poig_type || '',
-              an: yr
-            });
-          } else if (yr === YEAR) {
-            alertsList.push({
-              level: 'orange',
-              agent: `${p.nom} ${p.prenom}`,
-              mat: 'POIGNÉE',
-              type: p.poig_type || '',
-              an: yr
-            });
-          }
-        }
+        setExpiredItems(expired);
       });
-
-      alertsList.sort((a, b) => {
-        if (a.level === 'red' && b.level === 'orange') return -1;
-        if (a.level === 'orange' && b.level === 'red') return 1;
-        return a.agent.localeCompare(b.agent);
-      });
-
-      setAlerts(alertsList);
     } catch (error) {
-      console.error('Erreur chargement alertes:', error);
+      console.error('Erreur:', error);
     }
   }
 
-  const redCount = alerts.filter(a => a.level === 'red').length;
-  const orangeCount = alerts.filter(a => a.level === 'orange').length;
-  const totalCount = alerts.length;
+  if (expiredItems.length === 0) return null;
 
   return (
     <>
-      <button
-        className="alarm-button"
-        onClick={() => setShowModal(true)}
-        title={`${totalCount} alerte${totalCount > 1 ? 's' : ''}`}
-      >
+      <button className="alarm-button" onClick={() => setShowAlert(true)}>
         🔔
-        {totalCount > 0 && <span className="alarm-badge">{totalCount}</span>}
+        <span className="alarm-badge">{expiredItems.length}</span>
       </button>
 
-      {showModal && (
-        <AlertesModal
-          alerts={alerts}
-          redCount={redCount}
-          orangeCount={orangeCount}
-          totalCount={totalCount}
-          onClose={() => setShowModal(false)}
-          onRefresh={loadAlerts}
-        />
+      {showAlert && (
+        <div className="alarm-modal-bg open" onClick={() => setShowAlert(false)}>
+          <div className="alarm-modal" onClick={e => e.stopPropagation()}>
+            <div className="alarm-modal-header">
+              <h2>🔴 ALERTES D'EXPIRATION ({expiredItems.length})</h2>
+              <button className="alarm-close" onClick={() => setShowAlert(false)}>✕</button>
+            </div>
+
+            <div className="alarm-modal-body">
+              <div className="alarm-content">
+                {expiredItems.map((item, i) => (
+                  <div key={i} className="alarm-item">
+                    <div className="alarm-item-header">
+                      <span className="alarm-agent">👤 {item.agent}</span>
+                      <span className="alarm-badge-status">
+                        {item.isExpired ? '⚠️ EXPIRÉ' : ''}
+                      </span>
+                    </div>
+                    <div className="alarm-item-details">
+                      <div className="alarm-row">
+                        <span className="alarm-label">EPI:</span>
+                        <span className="alarm-value">{item.epi}</span>
+                      </div>
+                      <div className="alarm-row">
+                        <span className="alarm-label">MARQUE:</span>
+                        <span className="alarm-value">{item.type}</span>
+                      </div>
+                      <div className="alarm-row">
+                        <span className="alarm-label">NUMÉRO:</span>
+                        <span className="alarm-value">{item.number}</span>
+                      </div>
+                      <div className="alarm-row">
+                        <span className="alarm-label">EXPIRATION:</span>
+                        <span className="alarm-value alarm-expired">{item.date}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="alarm-modal-footer">
+              <button className="alarm-btn-refresh" onClick={() => {
+                loadExpiredItems();
+                setShowAlert(false);
+              }}>
+                🔄 Actualiser
+              </button>
+              <button className="alarm-btn-close" onClick={() => setShowAlert(false)}>
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
-  );
-}
-
-function AlertesModal({ alerts, redCount, orangeCount, totalCount, onClose, onRefresh }) {
-  return (
-    <div className="modal-bg open" onClick={onClose}>
-      <div className="modal alertes-modal" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>🚨 ALERTES D'EXPIRATION ({totalCount})</h3>
-          <button className="close-btn" onClick={onClose}>✕</button>
-        </div>
-
-        <div className="modal-body">
-          {totalCount === 0 ? (
-            <div className="no-alerts">
-              <p>✅ Aucune alerte d'expiration!</p>
-            </div>
-          ) : (
-            <>
-              {redCount > 0 && (
-                <section className="alerte-section">
-                  <h4 className="alerte-title red">
-                    🔴 EN RETARD ({redCount})
-                  </h4>
-                  {alerts
-                    .filter(a => a.level === 'red')
-                    .map((alert, i) => (
-                      <div key={i} className="alerte-item red">
-                        <div className="alerte-content">
-                          <div className="alerte-mat">
-                            {alert.mat} {alert.type && `— ${alert.type}`}
-                          </div>
-                          <div className="alerte-agent">👤 {alert.agent}</div>
-                        </div>
-                        <div style={{ 
-                          fontSize: '13px', 
-                          fontWeight: '700', 
-                          color: '#C00000',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          {alert.an}
-                        </div>
-                      </div>
-                    ))}
-                </section>
-              )}
-
-              {orangeCount > 0 && (
-                <section className="alerte-section">
-                  <h4 className="alerte-title orange">
-                    🟠 ANNÉE 2026 ({orangeCount})
-                  </h4>
-                  {alerts
-                    .filter(a => a.level === 'orange')
-                    .map((alert, i) => (
-                      <div key={i} className="alerte-item orange">
-                        <div className="alerte-content">
-                          <div className="alerte-mat">
-                            {alert.mat} {alert.type && `— ${alert.type}`}
-                          </div>
-                          <div className="alerte-agent">👤 {alert.agent}</div>
-                        </div>
-                        <div style={{ 
-                          fontSize: '13px', 
-                          fontWeight: '700', 
-                          color: '#ED7D31',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          {alert.an}
-                        </div>
-                      </div>
-                    ))}
-                </section>
-              )}
-            </>
-          )}
-        </div>
-
-        <div className="modal-footer">
-          <button className="btn-refresh" onClick={onRefresh}>
-            🔄 Actualiser
-          </button>
-          <button className="btn-close" onClick={onClose}>
-            Fermer
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
