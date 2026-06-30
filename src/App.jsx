@@ -11,8 +11,7 @@ function App() {
 
   useEffect(() => {
     loadPersonnel();
-    const interval = setInterval(loadPersonnel, 30000);
-    return () => clearInterval(interval);
+    // ✅ PLUS DE REFRESH AUTOMATIQUE - Supprimé la ligne setInterval
   }, []);
 
   async function loadPersonnel() {
