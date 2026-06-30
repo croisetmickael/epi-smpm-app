@@ -1,0 +1,268 @@
+.alarm-button {
+  position: relative;
+  background: #ED7D31;
+  color: white;
+  border: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(237, 125, 49, 0.3);
+}
+
+.alarm-button:hover {
+  background: #c4601a;
+  transform: scale(1.05);
+}
+
+.alarm-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #C00000;
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(192, 0, 0, 0.3);
+}
+
+.alarm-modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 9000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.alarm-modal-bg.open {
+  display: flex;
+}
+
+.alarm-modal {
+  background: white;
+  border-radius: 12px;
+  max-width: 700px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.4);
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.alarm-modal-header {
+  background: linear-gradient(135deg, #C00000 0%, #8B0000 100%);
+  color: white;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 12px 12px 0 0;
+  position: sticky;
+  top: 0;
+}
+
+.alarm-modal-header h2 {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.alarm-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.alarm-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.alarm-modal-body {
+  padding: 20px;
+}
+
+.alarm-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.alarm-item {
+  background: #FFF5F5;
+  border-radius: 10px;
+  border-left: 4px solid #C00000;
+  padding: 14px;
+  transition: all 0.2s;
+}
+
+.alarm-item:hover {
+  background: #FFE8E8;
+  box-shadow: 0 2px 8px rgba(192, 0, 0, 0.15);
+}
+
+.alarm-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid rgba(192, 0, 0, 0.2);
+}
+
+.alarm-agent {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1F3864;
+}
+
+.alarm-badge-status {
+  font-size: 12px;
+  font-weight: 700;
+  color: #C00000;
+  padding: 4px 8px;
+  background: #FFD6D6;
+  border-radius: 4px;
+}
+
+.alarm-item-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.alarm-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.alarm-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #5A7A9A;
+  text-transform: uppercase;
+  min-width: 80px;
+  letter-spacing: 0.3px;
+}
+
+.alarm-value {
+  font-size: 12px;
+  color: black;
+  font-weight: 600;
+}
+
+.alarm-value.alarm-expired {
+  color: #C00000;
+  font-weight: 700;
+}
+
+.alarm-modal-footer {
+  padding: 16px 20px;
+  border-top: 2px solid #EBF3FB;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  background: #FAFAFA;
+}
+
+.alarm-btn-refresh,
+.alarm-btn-close {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.alarm-btn-refresh {
+  background: #2E75B6;
+  color: white;
+}
+
+.alarm-btn-refresh:hover {
+  background: #1a5a9a;
+}
+
+.alarm-btn-close {
+  background: #F0F0F0;
+  color: #666;
+  border: 1px solid #C5D8ED;
+}
+
+.alarm-btn-close:hover {
+  background: #E0E0E0;
+}
+
+@media (max-width: 768px) {
+  .alarm-modal {
+    max-width: 90vw;
+    max-height: 90vh;
+  }
+
+  .alarm-modal-header h2 {
+    font-size: 16px;
+  }
+
+  .alarm-modal-body {
+    padding: 16px;
+  }
+
+  .alarm-item {
+    padding: 12px;
+  }
+
+  .alarm-row {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .alarm-label {
+    min-width: auto;
+  }
+
+  .alarm-modal-footer {
+    flex-direction: column;
+  }
+
+  .alarm-btn-refresh,
+  .alarm-btn-close {
+    width: 100%;
+  }
+}
