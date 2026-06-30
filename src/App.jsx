@@ -71,7 +71,7 @@ function App() {
   }
 
   // ===== TAB 2: RECHERCHE INVERSÉE =====
-  const performInverseSearch = () => {
+  useEffect(() => {
     if (!searchNumber.trim()) {
       setInverseResults([]);
       return;
@@ -108,10 +108,6 @@ function App() {
     });
 
     setInverseResults(results);
-  };
-
-  useEffect(() => {
-    performInverseSearch();
   }, [searchNumber, personnel]);
 
   return (
