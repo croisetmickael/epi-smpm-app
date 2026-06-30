@@ -504,4 +504,25 @@ body {
   .btn-close {
     width: 100%;
   }
+/* Alarme - Texte en noir */
+.alarm-content {
+  color: black;
+}
+
+.alarm-content h3 {
+  color: black;
+  font-weight: 700;
+}
+
+.alarm-content ul {
+  color: black;
+}
+
+.alarm-content li {
+  color: black;
+}
+
+.alarm-content strong {
+  color: black;
+  font-weight: 700;
 }
