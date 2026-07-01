@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import './AlertButton.css';
 
+const getSeverity = (year, currentYear) => {
+  if (year < currentYear) return 'expired';
+  if (year === currentYear) return 'warning';
+  return 'ok';
+};
+
 const AlertButton = ({ agents }) => {
   const [alerts, setAlerts] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const CURRENT_YEAR = new Date().getFullYear();
-
-  const getSeverity = (year) => {
-    if (year < CURRENT_YEAR) return 'expired';
-    if (year === CURRENT_YEAR) return 'warning';
-    return 'ok';
-  };
 
   const getStatusText = (severity) => {
     if (severity === 'expired') return 'EXPIRE';
@@ -34,7 +34,7 @@ const AlertButton = ({ agents }) => {
         if (!dateVal) return;
         const year = parseInt(String(dateVal).trim(), 10);
         if (isNaN(year)) return;
-        const severity = getSeverity(year);
+        const severity = getSeverity(year, CURRENT_YEAR);
         if (severity === 'ok') return;
         found.push({
           agent: agentName,
