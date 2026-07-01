@@ -19,10 +19,13 @@ function AlertButton({ agents }) {
       const prenom = agent.prenom || '';
       const agentName = nom + ' ' + prenom;
 
-      const processEPI = (epiType, epiData) => {
-        if (!epiData) return;
-        const dateVal = epiData.date || epiData.Date || '';
-        if (!dateVal) return;
+      const processEPI = (epiType, epiTypeField, epiDateField, epiNumField) => {
+        const typeVal = agent[epiTypeField];
+        const dateVal = agent[epiDateField];
+        const numVal = agent[epiNumField];
+
+        if (!typeVal || !dateVal) return;
+
         const year = parseInt(String(dateVal).trim(), 10);
         if (isNaN(year)) return;
 
@@ -35,19 +38,19 @@ function AlertButton({ agents }) {
         found.push({
           agent: agentName,
           epiType: epiType,
-          marque: epiData.type || epiData.marque || 'N/A',
-          numero: epiData.numero || epiData.Numero || 'N/A',
+          marque: typeVal,
+          numero: numVal || 'N/A',
           year: year,
           severity: severity,
         });
       };
 
-      processEPI('BAUDRIER', agent.baudrier);
-      processEPI('CASQUE', agent.casque);
-      processEPI('LONGE', agent.longe);
-      processEPI('MOUSQUETON', agent.mousqueton);
-      processEPI('DESCENDEUR', agent.descendeur);
-      processEPI('POIGNEE', agent.poignee);
+      processEPI('BAUDRIER', 'baudrier_type', 'baudrier_date', 'baudrier_num');
+      processEPI('CASQUE', 'casque_type', 'casque_date', 'casque_num');
+      processEPI('LONGE', 'longe_type', 'longe_date', 'longe_num');
+      processEPI('MOUSQUETON', 'mousq_type', 'mousq_date', 'mousq_num1');
+      processEPI('DESCENDEUR', 'desc_type', 'desc_date', 'desc_num');
+      processEPI('POIGNEE', 'poig_type', 'poig_date', 'poig_num');
     });
 
     setAlerts(found);
