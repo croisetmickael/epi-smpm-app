@@ -1,26 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import './AlertButton.css';
 
-const getSeverity = (year, currentYear) => {
-  if (year < currentYear) return 'expired';
-  if (year === currentYear) return 'warning';
-  return 'ok';
-};
-
-const AlertButton = ({ agents }) => {
+function AlertButton({ agents }) {
   const [alerts, setAlerts] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const CURRENT_YEAR = new Date().getFullYear();
-
-  const getStatusText = (severity) => {
-    if (severity === 'expired') return 'EXPIRE';
-    if (severity === 'warning') return 'ATTENTION';
-    return 'OK';
-  };
 
   useEffect(() => {
-    if (!agents || agents.length === 0) return;
+    if (!agents || agents.length === 0) {
+      setAlerts([]);
+      return;
+    }
 
+    const currentYear = new Date().getFullYear();
     const found = [];
 
     agents.forEach((agent) => {
@@ -28,14 +19,19 @@ const AlertButton = ({ agents }) => {
       const prenom = agent.prenom || '';
       const agentName = nom + ' ' + prenom;
 
-      const check = (epiType, epiData) => {
+      const processEPI = (epiType, epiData) => {
         if (!epiData) return;
         const dateVal = epiData.date || epiData.Date || '';
         if (!dateVal) return;
         const year = parseInt(String(dateVal).trim(), 10);
         if (isNaN(year)) return;
-        const severity = getSeverity(year, CURRENT_YEAR);
+
+        let severity = 'ok';
+        if (year < currentYear) severity = 'expired';
+        else if (year === currentYear) severity = 'warning';
+
         if (severity === 'ok') return;
+
         found.push({
           agent: agentName,
           epiType: epiType,
@@ -46,16 +42,22 @@ const AlertButton = ({ agents }) => {
         });
       };
 
-      check('BAUDRIER', agent.baudrier);
-      check('CASQUE', agent.casque);
-      check('LONGE', agent.longe);
-      check('MOUSQUETON', agent.mousqueton);
-      check('DESCENDEUR', agent.descendeur);
-      check('POIGNEE', agent.poignee);
+      processEPI('BAUDRIER', agent.baudrier);
+      processEPI('CASQUE', agent.casque);
+      processEPI('LONGE', agent.longe);
+      processEPI('MOUSQUETON', agent.mousqueton);
+      processEPI('DESCENDEUR', agent.descendeur);
+      processEPI('POIGNEE', agent.poignee);
     });
 
     setAlerts(found);
   }, [agents]);
+
+  const getStatusText = (severity) => {
+    if (severity === 'expired') return 'EXPIRE';
+    if (severity === 'warning') return 'ATTENTION';
+    return 'OK';
+  };
 
   const redCount = alerts.filter((a) => a.severity === 'expired').length;
   const orangeCount = alerts.filter((a) => a.severity === 'warning').length;
@@ -121,7 +123,6 @@ const AlertButton = ({ agents }) => {
               boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
             }}
           >
-            {/* HEADER */}
             <div style={{
               background: 'linear-gradient(135deg, #1F3864, #2E75B6)',
               color: 'white',
@@ -160,11 +161,10 @@ const AlertButton = ({ agents }) => {
               </button>
             </div>
 
-            {/* CONTENU */}
             <div style={{ overflowY: 'auto', padding: '16px', flex: 1 }}>
               {alerts.length === 0 ? (
                 <p style={{ textAlign: 'center', color: '#375623', padding: '30px' }}>
-                  Tous les equipements sont a jour !
+                  Tous les equipements sont a jour!
                 </p>
               ) : (
                 alerts.map((alert, index) => (
@@ -202,7 +202,6 @@ const AlertButton = ({ agents }) => {
               )}
             </div>
 
-            {/* FOOTER */}
             <div style={{
               padding: '14px 20px',
               borderTop: '1px solid #e0e0e0',
@@ -231,6 +230,6 @@ const AlertButton = ({ agents }) => {
       )}
     </div>
   );
-};
+}
 
 export default AlertButton;
