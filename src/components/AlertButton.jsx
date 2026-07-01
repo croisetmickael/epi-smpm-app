@@ -1,114 +1,109 @@
 import React, { useState, useEffect } from 'react';
 import './AlertButton.css';
 
-export function AlertButton() {
-  const [expiredItems, setExpiredItems] = useState([]);
-  const [showAlert, setShowAlert] = useState(false);
+const AlertButton = ({ agents }) => {
+  const [alerts, setAlerts] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const CURRENT_YEAR = 2026;
 
   useEffect(() => {
-    loadExpiredItems();
-  }, []);
+    const expiredEPI = [];
+    agents.forEach((agent) => {
+      const { nom, prenom, baudrier, casque, longe, mousqueton, descendeur, poignee } = agent;
 
-  async function loadExpiredItems() {
-    try {
-      const response = await fetch('/api/sheets');
-      if (!response.ok) throw new Error('Erreur API');
-      const data = response.json();
-      
-      data.then(result => {
-        const personnel = result.personnel || [];
-        const expired = [];
+      const checkEPI = (epiType, epiData) => {
+        if (epiData && epiData.date) {
+          const year = parseInt(epiData.date, 10);
+          if (year <= CURRENT_YEAR) {
+            expiredEPI.push({
+              agent: `${nom} ${prenom}`,
+              epiType,
+              marque: epiData.type || 'N/A',
+              numero: epiData.numero || 'N/A',
+              year,
+              severity: getSeverity(year),
+            });
+          }
+        }
+      };
 
-        personnel.forEach(p => {
-          const epiList = [
-            { field: 'baudrier_num', label: 'BAUDRIER', type: p.baudrier_type, date: p.baudrier_date },
-            { field: 'casque_num', label: 'CASQUE', type: p.casque_type, date: p.casque_date },
-            { field: 'longe_num', label: 'LONGE', type: p.longe_type, date: p.longe_date },
-            { field: 'mousq_num1', label: 'MOUSQUETON', type: p.mousq_type, date: p.mousq_date },
-            { field: 'desc_num', label: 'DESCENDEUR', type: p.desc_type, date: p.desc_date },
-            { field: 'poig_num', label: 'POIGNÉE', type: p.poig_type, date: p.poig_date },
-          ];
+      checkEPI('BAUDRIER', baudrier);
+      checkEPI('CASQUE', casque);
+      checkEPI('LONGE', longe);
+      checkEPI('MOUSQUETON', mousqueton);
+      checkEPI('DESCENDEUR', descendeur);
+      checkEPI('POIGNÉE', poignee);
+    });
 
-          epiList.forEach(epi => {
-            const year = epi.date ? parseInt(epi.date) : null;
-            if (year && year < 2026) {
-              expired.push({
-                agent: `${p.nom} ${p.prenom}`,
-                epi: epi.label,
-                type: epi.type || 'N/A',
-                number: p[epi.field] || 'N/A',
-                date: epi.date,
-                isExpired: year < 2026,
-              });
-            }
-          });
-        });
+    // Filtrer pour ne garder que les alertes (expired + warning, pas ok)
+    const filteredAlerts = expiredEPI.filter(alert => alert.severity !== 'ok');
+    setAlerts(filteredAlerts);
+  }, [agents]);
 
-        setExpiredItems(expired);
-      });
-    } catch (error) {
-      console.error('Erreur:', error);
+  const getSeverity = (year) => {
+    if (year < CURRENT_YEAR) return 'expired'; // ROUGE - Expiré
+    if (year === CURRENT_YEAR) return 'warning'; // ORANGE - Année en cours
+    return 'ok'; // VERT - OK
+  };
+
+  const getStatusText = (severity) => {
+    switch (severity) {
+      case 'expired':
+        return '⚠️ EXPIRÉ';
+      case 'warning':
+        return '⚠️ ATTENTION';
+      case 'ok':
+        return '✅ OK';
+      default:
+        return '';
     }
-  }
-
-  if (expiredItems.length === 0) return null;
+  };
 
   return (
     <>
-      <button className="alarm-button" onClick={() => setShowAlert(true)}>
-        🔔
-        <span className="alarm-badge">{expiredItems.length}</span>
+      <button
+        className={`alert-button ${alerts.length > 0 ? 'has-alerts' : ''}`}
+        onClick={() => setShowModal(true)}
+      >
+        🔔 {alerts.length > 0 && <span className="alert-badge">{alerts.length}</span>}
       </button>
 
-      {showAlert && (
-        <div className="alarm-modal-bg open" onClick={() => setShowAlert(false)}>
-          <div className="alarm-modal" onClick={e => e.stopPropagation()}>
-            <div className="alarm-modal-header">
-              <h2>🔴 ALERTES D'EXPIRATION ({expiredItems.length})</h2>
-              <button className="alarm-close" onClick={() => setShowAlert(false)}>✕</button>
+      {showModal && (
+        <div className="alert-modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="alert-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="alert-modal-header">
+              <h2>🔴 ALERTES D'EXPIRATION ({alerts.length})</h2>
+              <button className="close-btn" onClick={() => setShowModal(false)}>✕</button>
             </div>
 
-            <div className="alarm-modal-body">
-              <div className="alarm-content">
-                {expiredItems.map((item, i) => (
-                  <div key={i} className="alarm-item">
-                    <div className="alarm-item-header">
-                      <span className="alarm-agent">👤 {item.agent}</span>
-                      <span className="alarm-badge-status">
-                        {item.isExpired ? '⚠️ EXPIRÉ' : ''}
+            <div className="alert-modal-content">
+              {alerts.length === 0 ? (
+                <p className="no-alerts">✅ Aucune alerte - Tous les équipements sont à jour !</p>
+              ) : (
+                alerts.map((alert, index) => (
+                  <div key={index} className={`alert-item alert-${alert.severity}`}>
+                    <div className="alert-header">
+                      <span className="agent-name">👤 {alert.agent}</span>
+                      <span className={`status-badge status-${alert.severity}`}>
+                        {getStatusText(alert.severity)}
                       </span>
                     </div>
-                    <div className="alarm-item-details">
-                      <div className="alarm-row">
-                        <span className="alarm-label">EPI:</span>
-                        <span className="alarm-value">{item.epi}</span>
-                      </div>
-                      <div className="alarm-row">
-                        <span className="alarm-label">MARQUE:</span>
-                        <span className="alarm-value">{item.type}</span>
-                      </div>
-                      <div className="alarm-row">
-                        <span className="alarm-label">NUMÉRO:</span>
-                        <span className="alarm-value">{item.number}</span>
-                      </div>
-                      <div className="alarm-row">
-                        <span className="alarm-label">EXPIRATION:</span>
-                        <span className="alarm-value alarm-expired">{item.date}</span>
-                      </div>
+                    <div className="alert-details">
+                      <p><strong>EPI:</strong> {alert.epiType}</p>
+                      <p><strong>MARQUE:</strong> {alert.marque}</p>
+                      <p><strong>NUMÉRO:</strong> {alert.numero}</p>
+                      <p><strong>EXPIRATION:</strong> {alert.year}</p>
                     </div>
                   </div>
-                ))}
-              </div>
+                ))
+              )}
             </div>
 
-            <div className="alarm-modal-footer">
-              <button className="alarm-btn-refresh" onClick={() => {
-                loadExpiredItems();
-                setShowAlert(false);
-              }}>
+            <div className="alert-modal-footer">
+              <button className="btn-primary" onClick={() => setShowModal(false)}>
                 🔄 Actualiser
               </button>
-              <button className="alarm-btn-close" onClick={() => setShowAlert(false)}>
+              <button className="btn-secondary" onClick={() => setShowModal(false)}>
                 Fermer
               </button>
             </div>
@@ -117,4 +112,6 @@ export function AlertButton() {
       )}
     </>
   );
-}
+};
+
+export default AlertButton;
