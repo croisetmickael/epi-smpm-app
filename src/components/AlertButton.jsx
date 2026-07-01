@@ -56,14 +56,8 @@ function AlertButton({ agents }) {
     setAlerts(found);
   }, [agents]);
 
-  const getStatusText = (severity) => {
-    if (severity === 'expired') return 'EXPIRE';
-    if (severity === 'warning') return 'ATTENTION';
-    return 'OK';
-  };
-
-  const redCount = alerts.filter((a) => a.severity === 'expired').length;
-  const orangeCount = alerts.filter((a) => a.severity === 'warning').length;
+  const expiredAlerts = alerts.filter(a => a.severity === 'expired');
+  const warningAlerts = alerts.filter(a => a.severity === 'warning');
 
   return (
     <div>
@@ -138,18 +132,6 @@ function AlertButton({ agents }) {
               <span style={{ fontWeight: 'bold', fontSize: '16px' }}>
                 ALERTES EXPIRATION ({alerts.length})
               </span>
-              <div style={{ display: 'flex', gap: '12px', fontSize: '13px' }}>
-                {redCount > 0 && (
-                  <span style={{ background: '#C00000', padding: '2px 10px', borderRadius: '12px' }}>
-                    {redCount} EXPIRE
-                  </span>
-                )}
-                {orangeCount > 0 && (
-                  <span style={{ background: '#ED7D31', padding: '2px 10px', borderRadius: '12px' }}>
-                    {orangeCount} ATTENTION
-                  </span>
-                )}
-              </div>
               <button
                 onClick={() => setShowModal(false)}
                 style={{
@@ -170,38 +152,87 @@ function AlertButton({ agents }) {
                   Tous les equipements sont a jour!
                 </p>
               ) : (
-                alerts.map((alert, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      marginBottom: '12px',
-                      padding: '14px',
-                      borderLeft: '4px solid ' + (alert.severity === 'expired' ? '#C00000' : '#ED7D31'),
-                      background: alert.severity === 'expired' ? '#fff0f0' : '#fff7f0',
-                      borderRadius: '6px',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                      <strong style={{ color: '#1F3864' }}>{alert.agent}</strong>
-                      <span style={{
-                        background: alert.severity === 'expired' ? '#C00000' : '#ED7D31',
-                        color: 'white',
-                        padding: '2px 10px',
-                        borderRadius: '12px',
-                        fontSize: '12px',
-                        fontWeight: 'bold',
-                      }}>
-                        {getStatusText(alert.severity)}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: '13px', color: '#333', lineHeight: '1.6' }}>
-                      <div><strong>EPI :</strong> {alert.epiType}</div>
-                      <div><strong>MARQUE :</strong> {alert.marque}</div>
-                      <div><strong>NUMERO :</strong> {alert.numero}</div>
-                      <div><strong>EXPIRATION :</strong> {alert.year}</div>
-                    </div>
-                  </div>
-                ))
+                <>
+                  {expiredAlerts.length > 0 && (
+                    <>
+                      <div style={{ fontWeight: 'bold', color: '#C00000', marginBottom: '14px', fontSize: '15px', paddingBottom: '8px', borderBottom: '2px solid #C00000' }}>
+                        EXPIRE ({expiredAlerts.length})
+                      </div>
+                      {expiredAlerts.map((alert, index) => (
+                        <div
+                          key={'expired-' + index}
+                          style={{
+                            marginBottom: '12px',
+                            padding: '14px',
+                            borderLeft: '4px solid #C00000',
+                            background: '#fff0f0',
+                            borderRadius: '6px',
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <strong style={{ color: '#1F3864' }}>{alert.agent}</strong>
+                            <span style={{
+                              background: '#C00000',
+                              color: 'white',
+                              padding: '2px 10px',
+                              borderRadius: '12px',
+                              fontSize: '12px',
+                              fontWeight: 'bold',
+                            }}>
+                              EXPIRE
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '13px', color: '#333', lineHeight: '1.6' }}>
+                            <div><strong>EPI :</strong> {alert.epiType}</div>
+                            <div><strong>MARQUE :</strong> {alert.marque}</div>
+                            <div><strong>NUMERO :</strong> {alert.numero}</div>
+                            <div><strong>EXPIRATION :</strong> {alert.year}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+
+                  {warningAlerts.length > 0 && (
+                    <>
+                      <div style={{ fontWeight: 'bold', color: '#ED7D31', marginBottom: '14px', fontSize: '15px', paddingBottom: '8px', borderBottom: '2px solid #ED7D31', marginTop: expiredAlerts.length > 0 ? '20px' : '0px' }}>
+                        ATTENTION ({warningAlerts.length})
+                      </div>
+                      {warningAlerts.map((alert, index) => (
+                        <div
+                          key={'warning-' + index}
+                          style={{
+                            marginBottom: '12px',
+                            padding: '14px',
+                            borderLeft: '4px solid #ED7D31',
+                            background: '#fff7f0',
+                            borderRadius: '6px',
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <strong style={{ color: '#1F3864' }}>{alert.agent}</strong>
+                            <span style={{
+                              background: '#ED7D31',
+                              color: 'white',
+                              padding: '2px 10px',
+                              borderRadius: '12px',
+                              fontSize: '12px',
+                              fontWeight: 'bold',
+                            }}>
+                              ATTENTION
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '13px', color: '#333', lineHeight: '1.6' }}>
+                            <div><strong>EPI :</strong> {alert.epiType}</div>
+                            <div><strong>MARQUE :</strong> {alert.marque}</div>
+                            <div><strong>NUMERO :</strong> {alert.numero}</div>
+                            <div><strong>EXPIRATION :</strong> {alert.year}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </>
               )}
             </div>
 
