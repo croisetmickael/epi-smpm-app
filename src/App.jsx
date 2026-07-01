@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import { AlertButton } from './components/AlertButton';
+import AlertButton from './components/AlertButton';  // 
 
 function App() {
   const [personnel, setPersonnel] = useState([]);
