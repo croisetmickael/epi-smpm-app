@@ -6,6 +6,18 @@ const AlertButton = ({ agents }) => {
   const [showModal, setShowModal] = useState(false);
   const CURRENT_YEAR = 2026;
 
+  const getSeverity = (year) => {
+    if (year < CURRENT_YEAR) return 'expired';
+    if (year === CURRENT_YEAR) return 'warning';
+    return 'ok';
+  };
+
+  const getStatusText = (severity) => {
+    if (severity === 'expired') return 'EXPIRE';
+    if (severity === 'warning') return 'ATTENTION';
+    return 'OK';
+  };
+
   useEffect(() => {
     const expiredEPI = [];
     agents.forEach((agent) => {
@@ -38,18 +50,6 @@ const AlertButton = ({ agents }) => {
     const filteredAlerts = expiredEPI.filter(alert => alert.severity !== 'ok');
     setAlerts(filteredAlerts);
   }, [agents]);
-
-  const getSeverity = (year) => {
-    if (year < CURRENT_YEAR) return 'expired';
-    if (year === CURRENT_YEAR) return 'warning';
-    return 'ok';
-  };
-
-  const getStatusText = (severity) => {
-    if (severity === 'expired') return 'EXPIRE';
-    if (severity === 'warning') return 'ATTENTION';
-    return 'OK';
-  };
 
   return (
     <>
